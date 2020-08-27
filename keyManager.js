@@ -1,21 +1,3 @@
-const express = require('express')
-const redisModule = require("redis");
-const { v1: uuidv4 } = require('uuid');
-
-const app = express()
-const port = 4567
-const redis = redisModule.createClient();
-
-redis.on("error", function(error) {
-    console.error(error);
-});
-
-// availableKeyObjects = {
-//     "abc": {expire: 15},
-//     "pqr": {expire: 0},
-//     "xyz": {expire: 5}
-// }
-
 class KeyManager { 
     // keyObjects = {"blocked":{}, "available":{}}
 
@@ -23,10 +5,11 @@ class KeyManager {
         this.availableKeyTimeout = 300
         this.blockedKeyTimeout = 60    
         this.keyObjects = {"blocked":{}, "available":{}}
+        console.log(`${this}`)
     }
 
     generateKey(){
-        key = uuidv4();
+        var key = uuidv4();
         this.keyObjects["available"][key] = {exipre: this.availableKeyTimeout}
     }
     
@@ -63,9 +46,9 @@ class KeyManager {
     }
 
     updateAvailableKeyTimeoutTask(){
-        console.log(`${this.blockedKeyTimeout}`)
         for (const  key in this.keyObjects["available"]) {
             if( this.keyObjects["available"].hasOwnProperty(key) ) {
+                console.log(`updating key ${key}`)
                 if (this.keyObjects["available"][key].expire==0){
                     console.log(`deleting obj with key ${key}`)
                     delete this.keyObjects["available"][key];
@@ -96,24 +79,5 @@ class KeyManager {
 }
 
 keyManager = new KeyManager()
-setInterval(keyManager.updateAvailableKeyTimeoutTask, 1000)
-setInterval(keyManager.updateBlockedKeyTimeoutTask, 1000)
-
-app.post('/api/key/generate', (req, res) =>{
-    key = uuidv4();
-    redis.set(`key:available:${key}`, key, 'EX', 300)
-    res.json({'message': 'Key generated successfully'});
-})
-
-app.get('/api/key/get', (req, res) =>{
-    redis.scan(0, "key:available:*", (err, matches) => {
-        if (err) return console.log(err);
-            console.log(matches);
-    })
-
-    res.json({'key': ""});
-})
-
-app.listen(port, () => {
-    console.log(`Example app listening at http://localhost:${port}`)
-})
+// setInterval(keyManager.updateAvailableKeyTimeoutTask.bind(keyManager._this), 1000)
+// setInterval(keyManager.updateBlockedKeyTimeoutTask.bind(keyManager._this), 1000)
